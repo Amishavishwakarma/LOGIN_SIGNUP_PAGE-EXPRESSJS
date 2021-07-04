@@ -1,8 +1,34 @@
+require("dotenv").config({path:"/home/amisha/Desktop/PRECTICE/LOGIN-SIGNUP/.env"})
+const cookieParser = require("cookie-parser");
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const myconnection = require("./connect_mysql");
+const auth=require("./auth")
 const app = express();
 app.use(express.json());
+app.use(cookieParser())
+
+
+app.get("/user",(req,res)=>{
+    try{
+        cookie_tokon=req.headers.authorization
+        user_tokon=cookie_tokon.slice(14,193);
+        const verify = jwt.verify(user_tokon,"myjwt",(err)=>{
+            if (!err){
+                user_detail={
+                    name:req.body.name,
+                    email:req.body.email,
+                    password:req.body.password
+                }
+                res.send(user_detail)
+            }
+        });
+    }
+    catch{
+        res.status(401).send("you need to signup")
+    }
+    
+})
 
 app.post("/api/signup", (req, res) => {
     //creating a object
@@ -56,12 +82,12 @@ app.post("/api/login", (req, res) => {
 
         //craete a token from jwt
         const createTokon = (Email_Id) => {
-            const tokon = jwt.sign({email_id: Email_Id,  data_time: Math.floor(Date.now()/1000)-30 }, "myjwt");
+            const tokon = jwt.sign({email_id: Email_Id,  data_time: Math.floor(Date.now()/1000)-30 }, process.env.SECRET_KEY);
             return (tokon);
         }
         const created_tokon = createTokon(Email_Id);
 
-        res.cookie('jwtcoo', created_tokon, { httpOnly: true, secure: true, maxAge: 3600000 });
+        res.cookie('jwt', created_tokon, { httpOnly: true, secure: true, maxAge: 3600000 });
 
 
     }
@@ -70,6 +96,7 @@ app.post("/api/login", (req, res) => {
     }
 
 })
+
 
 app.listen(3000, (err) => {
     if (err) {
